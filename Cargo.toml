@@ -1,0 +1,12 @@
+[package]
+name = "qinpel-wiz"
+description = "QinpelWiz - Wizard automagix install and update for Qinpel applications and commands."
+repository = "https://github.com/emuvi/qinpel-wiz/"
+authors = ["Éverton M. Vieira"]
+license = "LGPL-3.0-only"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
