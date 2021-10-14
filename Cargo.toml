@@ -1,6 +1,6 @@
 [package]
 name = "qinpel-wiz"
-description = "QinpelWiz - Wizard automagix install and update for Qinpel applications and commands."
+description = "QinpelWiz - Wizard automagic install and update for Qinpel applications and commands."
 repository = "https://github.com/emuvi/qinpel-wiz/"
 authors = ["Éverton M. Vieira"]
 license = "LGPL-3.0-only"
