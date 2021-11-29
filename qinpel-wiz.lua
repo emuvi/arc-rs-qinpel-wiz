@@ -1,1 +1,2 @@
-print(wiz.cmd("cargo", {"build"}, "."))
+print("Building binaries...")
+print(wiz.cmd("cargo", {"build", "--release"}, "."))
