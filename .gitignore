@@ -1,2 +1,5 @@
+/code
+/run
 /target
 Cargo.lock
+locker.json

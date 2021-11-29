@@ -3,5 +3,8 @@
         "octocrab",
         "rlua",
         "wizlua"
+    ],
+    "Lua.diagnostics.globals": [
+        "wiz"
     ]
 }
