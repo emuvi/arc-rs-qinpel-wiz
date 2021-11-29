@@ -1,16 +1,17 @@
-use octocrab::Octocrab;
-use serde_json::Value;
-use std::path::PathBuf;
 use crate::locks::Locker;
 use crate::tools;
 use crate::wizlua;
 use crate::WizError;
+use octocrab::Octocrab;
+use serde_json::Value;
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct Repository {
     pub owner: String,
     pub name: String,
     pub path: PathBuf,
+    pub lua_path: PathBuf,
 }
 
 impl Repository {
@@ -18,53 +19,86 @@ impl Repository {
     pub async fn wizard(&self) -> Result<(), WizError> {
         if self.path.exists() {
             println!("Pulling the repository...");
-            tools::cmd("git", &["pull"], self.path, true)?;
+            tools::cmd("git", &["pull"], &self.path, true)?;
         } else {
             let origin = format!("https://github.com/{}/{}", self.owner, self.name);
             println!("Cloning the repository from {}", origin);
             tools::cmd("git", &["clone", &origin], "./code", true)?;
         }
         println!("Starting to check on lua wizard...");
-        let lua_path = format!("./code/{}/{}", self.name, "qinpel-wiz.lua");
-        let lua_path = std::path::Path::new(&lua_path);
-        if !lua_path.exists() {
+        if !self.lua_path.exists() {
             println!("There is no lua wizard on this repository.");
         } else {
             println!("Checking the necessity of execution of the lua wizard...");
-            let mut locker = Locker::load()?;
-            let actual_tag = tools::cmd("git", &["tag", "--sort=-version:refname"], path, false)?;
-            let actual_tag = actual_tag.lines().next();
-            if actual_tag.is_none() {
-                println!("Could not execute the lua wizard because there is no tags in this repository.");
-                return Ok(());
-            }
-            let actual_tag = actual_tag.unwrap();
+            let actual_tag = self.get_actual_tag()?;
             if actual_tag.is_empty() {
-                println!("Could not execute the lua wizard because there is no tags in this repository.");
-                return Ok(());
-            }
-            let mut should_run = true;
-
-            if let Some(tag_done) =  locker.locked.get(&self.name) {
-                if actual_tag == tag_done {
-                    println!("The lua wizard was already executed for the actual tag: {}", actual_tag);
-                    should_run = false;
-                }
-            }
-            if should_run {
-                println!("The lua wizard needs to be executed for the actual tag: {}", actual_tag);
-                println!("Starting to execute the lua wizard...");
-                let result = wizlua::execute(lua_path)?;
-                println!("{}", result);
-                locker.locked.insert(String::from(&self.name), String::from(actual_tag));
-                locker.save()?;
+                self.lua_execute_with_no_tag()?;
+            } else {
+                self.lua_execute_with_actual_tag(actual_tag)?;
             }
         }
         Ok(())
     }
 
-    fn get_actual_tag(&self) -> String {
+    fn get_actual_tag(&self) -> Result<String, WizError> {
+        let actual_tag = tools::cmd(
+            "git",
+            &["tag", "--sort=-version:refname"],
+            &self.path,
+            false,
+        )?;
+        let actual_tag = actual_tag.lines().next();
+        if let Some(actual_tag) = actual_tag {
+            Ok(String::from(actual_tag.trim()))
+        } else {
+            Ok(String::new())
+        }
+    }
 
+    fn lua_execute_with_no_tag(&self) -> Result<(), WizError> {
+        println!("The lua wizard will be executed while there is no actual tag.");
+        self.lua_execute()?;
+        Ok(())
+    }
+
+    fn lua_execute_with_actual_tag(&self, actual_tag: String) -> Result<(), WizError> {
+        let mut locker = Locker::load()?;
+        let mut should_run = true;
+        if let Some(tag_done) = locker.locked.get(&self.name) {
+            if &actual_tag == tag_done {
+                println!(
+                    "The lua wizard was already executed for the actual tag: {}",
+                    actual_tag
+                );
+                should_run = false;
+            }
+        }
+        if should_run {
+            println!(
+                "The lua wizard needs to be executed for the actual tag: {}",
+                actual_tag
+            );
+            tools::cmd(
+                "git",
+                &["checkout", &format!("tags/{}", actual_tag)],
+                &self.path,
+                false,
+            )?;
+            self.lua_execute()?;
+            tools::cmd("git", &["checkout", "master"], &self.path, false)?;
+            locker
+                .locked
+                .insert(String::from(&self.name), String::from(actual_tag));
+            locker.save()?;
+        }
+        Ok(())
+    }
+
+    fn lua_execute(&self) -> Result<(), WizError> {
+        println!("Starting to execute the lua wizard...");
+        let result = wizlua::execute(&self.lua_path)?;
+        println!("{}", result);
+        Ok(())
     }
 
 }
@@ -104,7 +138,14 @@ pub async fn get_qinpel_repos(github: Octocrab) -> Result<Vec<Repository>, WizEr
             if is_qinpel_repo(&name) {
                 let path = format!("./code/{}", name);
                 let path = PathBuf::from(path);
-                result.push(Repository { owner, name, path });
+                let lua_path = format!("./code/{}/{}", name, "qinpel-wiz.lua");
+                let lua_path = PathBuf::from(lua_path);
+                result.push(Repository {
+                    owner,
+                    name,
+                    path,
+                    lua_path,
+                });
             }
         }
         let page_info = repositories.get("pageInfo").unwrap().as_object().unwrap();
