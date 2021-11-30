@@ -1,25 +1,42 @@
-use std::path::Path;
-use std::process::{Command};
-
 use crate::WizError;
+use simple_error::SimpleError;
+use std::io::Read;
+use std::path::Path;
+use std::process::{Command, Stdio};
 
 pub fn cmd<A: AsRef<str>, P: AsRef<Path>>(
     name: &str,
     args: &[A],
     dir: P,
-    print: bool
-) -> Result<String, WizError> {
+    print: bool,
+    throw: bool,
+) -> Result<(i32, String), WizError> {
     let mut cmd = Command::new(name);
     for arg in args {
         cmd.arg(arg.as_ref());
     }
     cmd.current_dir(dir);
-    let child = cmd.output()?;
-    let result = String::from_utf8(child.stdout)?;
+    let mut child = cmd
+        .stdin(Stdio::null())
+        .stderr(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()?;
+    let mut out = String::new();
+    child.stderr.take().unwrap().read_to_string(&mut out)?;
+    child.stdout.take().unwrap().read_to_string(&mut out)?;
+    let out = out.trim();
+    let out = String::from(out);
+    let res = child.wait()?.code().unwrap_or(0);
     if print {
-        println!("{}", result.trim());
+        println!("{}", out);
     }
-    Ok(result)
+    if throw && res != 0 {
+        return Err(Box::new(SimpleError::new(format!(
+            "Exit code from {} command is different than zero: {}.",
+            name, res
+        ))));
+    }
+    Ok((res, out))
 }
 
 pub fn cp(origin: &str, destiny: &str) -> Result<(), WizError> {

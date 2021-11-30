@@ -15,15 +15,14 @@ pub struct Repository {
 }
 
 impl Repository {
-
     pub async fn wizard(&self) -> Result<(), WizError> {
         if self.path.exists() {
             println!("Pulling the repository...");
-            tools::cmd("git", &["pull"], &self.path, true)?;
+            tools::cmd("git", &["pull"], &self.path, true, true)?;
         } else {
             let origin = format!("https://github.com/{}/{}", self.owner, self.name);
             println!("Cloning the repository from {}", origin);
-            tools::cmd("git", &["clone", &origin], "./code", true)?;
+            tools::cmd("git", &["clone", &origin], "./code", true, true)?;
         }
         println!("Starting to check on lua wizard...");
         if !self.lua_path.exists() {
@@ -41,12 +40,14 @@ impl Repository {
     }
 
     fn get_actual_tag(&self) -> Result<String, WizError> {
-        let actual_tag = tools::cmd(
+        let result = tools::cmd(
             "git",
             &["tag", "--sort=-version:refname"],
             &self.path,
             false,
+            true,
         )?;
+        let actual_tag = result.1;
         let actual_tag = actual_tag.lines().next();
         if let Some(actual_tag) = actual_tag {
             Ok(String::from(actual_tag.trim()))
@@ -78,14 +79,10 @@ impl Repository {
                 "The lua wizard needs to be executed for the actual tag: {}",
                 actual_tag
             );
-            tools::cmd(
-                "git",
-                &["checkout", &format!("tags/{}", actual_tag)],
-                &self.path,
-                false,
-            )?;
+            let tag_param = format!("tags/{}", actual_tag);
+            tools::cmd("git", &["checkout", &tag_param], &self.path, true, true)?;
             self.lua_execute()?;
-            tools::cmd("git", &["checkout", "master"], &self.path, false)?;
+            tools::cmd("git", &["checkout", "master"], &self.path, true, true)?;
             locker
                 .locked
                 .insert(String::from(&self.name), String::from(actual_tag));

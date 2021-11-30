@@ -78,9 +78,11 @@ fn to_lua<T>(result: Result<T, WizError>) -> Result<T, rlua::Error> {
 fn wiz_injection(ctx: Context) -> Result<(), WizError> {
     let wiz = ctx.create_table()?;
 
-    let cmd = ctx.create_function(|_, (name, args, dir): (String, Vec<String>, String)| {
-        to_lua(tools::cmd(&name, args.as_slice(), &dir, false))
-    })?;
+    let cmd = ctx.create_function(
+        |_, (name, args, dir, print, throw): (String, Vec<String>, String, bool, bool)| {
+            to_lua(tools::cmd(&name, args.as_slice(), &dir, print, throw))
+        },
+    )?;
     wiz.set("cmd", cmd)?;
 
     let cp = ctx.create_function(|_, (origin, destiny): (String, String)| {
