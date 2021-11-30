@@ -15,6 +15,7 @@ pub struct Repository {
 }
 
 impl Repository {
+	
 	pub async fn wizard(&self) -> Result<(), WizError> {
 		if self.path.exists() {
 			println!("Pulling the repository...");
@@ -55,7 +56,7 @@ impl Repository {
 	}
 
 	fn lua_execute_with_no_tag(&self) -> Result<(), WizError> {
-		println!("The lua wizard will be executed while there is no actual tag.");
+		println!("The lua wizard will be executed while there is no tags.");
 		self.lua_execute()?;
 		Ok(())
 	}
@@ -99,6 +100,7 @@ impl Repository {
 		}
 		Ok(())
 	}
+	
 }
 
 pub async fn get_qinpel_repos(github: Octocrab) -> Result<Vec<Repository>, WizError> {
