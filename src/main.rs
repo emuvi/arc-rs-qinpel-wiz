@@ -42,10 +42,10 @@ async fn wizard() -> Result<(), WizError> {
     std::fs::create_dir_all("./run")?;
     let token = std::env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env variable is required");
     let github = Octocrab::builder().personal_token(token).build()?;
-    println!("Getting all Qinpel repositories...");
+    println!("--- Getting all Qinpel repositories... ---");
     let repos = repos::get_qinpel_repos(github).await?;
     for repo in repos {
-        println!("Starting Qinpel wizard of {}", repo.name);
+        println!("--- Starting Qinpel wizard of {} ---", repo.name);
         if let Err(e) = repo.wizard().await {
             eprintln!("Problem on wizard of {} - {}", repo.name, e);
         }
