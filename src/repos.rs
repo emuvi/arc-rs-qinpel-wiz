@@ -18,7 +18,9 @@ impl Repository {
 	pub async fn wizard(&self) -> Result<(), WizError> {
 		if self.path.exists() {
 			println!("Pulling the repository...");
+			tools::cmd("git", &["reset", "--hard"], &self.path, true, true)?;
 			tools::cmd("git", &["checkout", "master"], &self.path, true, true)?;
+			tools::cmd("git", &["reset", "--hard"], &self.path, true, true)?;
 			tools::cmd("git", &["pull"], &self.path, true, true)?;
 		} else {
 			let origin = format!("https://github.com/{}/{}", self.owner, self.name);
