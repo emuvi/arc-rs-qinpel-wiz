@@ -111,10 +111,7 @@ fn wiz_injection(ctx: Context) -> Result<(), WizError> {
     })?;
     wiz.set("append", append)?;
 
-	let exe_ext = ctx.create_function(|_, (): ()| {
-        Ok(tools::exe_ext())
-    })?;
-    wiz.set("append", exe_ext)?;
+	wiz.set("exe_ext", tools::exe_ext())?;
 
     let globals = ctx.globals();
     globals.set("wiz", wiz)?;
