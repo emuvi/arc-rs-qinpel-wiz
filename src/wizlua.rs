@@ -101,10 +101,20 @@ fn wiz_injection(ctx: Context) -> Result<(), WizError> {
     let mk_dir = ctx.create_function(|_, path: String| to_lua(tools::mk_dir(&path)))?;
     wiz.set("mk_dir", mk_dir)?;
 
-    let mk_file = ctx.create_function(|_, (path, contents): (String, String)| {
-        to_lua(tools::mk_file(&path, &contents))
+    let write = ctx.create_function(|_, (path, contents): (String, String)| {
+        to_lua(tools::write(&path, &contents))
     })?;
-    wiz.set("mk_file", mk_file)?;
+    wiz.set("write", write)?;
+
+	let append = ctx.create_function(|_, (path, contents): (String, String)| {
+        to_lua(tools::append(&path, &contents))
+    })?;
+    wiz.set("append", append)?;
+
+	let exe_ext = ctx.create_function(|_, (): ()| {
+        Ok(tools::exe_ext())
+    })?;
+    wiz.set("append", exe_ext)?;
 
     let globals = ctx.globals();
     globals.set("wiz", wiz)?;

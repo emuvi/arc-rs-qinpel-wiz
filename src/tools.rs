@@ -1,6 +1,6 @@
 use crate::WizError;
 use simple_error::SimpleError;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::Path;
 use std::process::{Command, Stdio};
 
@@ -48,31 +48,6 @@ pub fn cp(origin: &str, destiny: &str) -> Result<(), WizError> {
     Ok(())
 }
 
-pub fn mv(origin: &str, destiny: &str) -> Result<(), WizError> {
-    cp(origin, destiny)?;
-    rm(origin)?;
-    Ok(())
-}
-
-pub fn rm(path: &str) -> Result<(), WizError> {
-    if std::fs::metadata(path)?.is_dir() {
-        std::fs::remove_dir_all(path)?;
-    } else {
-        std::fs::remove_file(path)?;
-    }
-    Ok(())
-}
-
-pub fn mk_dir(path: &str) -> Result<(), WizError> {
-    std::fs::create_dir_all(path)?;
-    Ok(())
-}
-
-pub fn mk_file(path: &str, contents: &str) -> Result<(), WizError> {
-    std::fs::write(path, contents)?;
-    Ok(())
-}
-
 pub fn copy_directory(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), WizError> {
     std::fs::create_dir_all(&destiny)?;
     for entry in std::fs::read_dir(origin)? {
@@ -93,4 +68,39 @@ pub fn copy_file(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<
     }
     std::fs::copy(origin, destiny)?;
     Ok(())
+}
+
+pub fn mv(origin: &str, destiny: &str) -> Result<(), WizError> {
+    cp(origin, destiny)?;
+    rm(origin)?;
+    Ok(())
+}
+
+pub fn rm(path: &str) -> Result<(), WizError> {
+    if std::fs::metadata(path)?.is_dir() {
+        std::fs::remove_dir_all(path)?;
+    } else {
+        std::fs::remove_file(path)?;
+    }
+    Ok(())
+}
+
+pub fn mk_dir(path: &str) -> Result<(), WizError> {
+    std::fs::create_dir_all(path)?;
+    Ok(())
+}
+
+pub fn write(path: &str, contents: &str) -> Result<(), WizError> {
+    std::fs::write(path, contents)?;
+    Ok(())
+}
+
+pub fn append(path: &str, contents: &str) -> Result<(), WizError> {
+	let mut file = std::fs::OpenOptions::new().write(true).append(true).open(path)?;
+	writeln!(file, "{}", contents)?;
+	Ok(())
+}
+
+pub fn exe_ext() -> &'static str {
+	std::env::consts::EXE_EXTENSION
 }
