@@ -1,4 +1,6 @@
 #!/bin/bash
-cd /home/pointel/Wizard
+su - pointel
+cd ~/Wizard
 ./qinpel-wiz
-rm qinpel-wiz-old
+exit
+reboot
