@@ -1,9 +1,9 @@
 use crate::locks::Locker;
 use crate::WizError;
+use liz;
 use octocrab::Octocrab;
 use serde_json::Value;
 use std::path::PathBuf;
-use liz;
 
 #[derive(Debug)]
 pub struct Repository {
@@ -14,18 +14,18 @@ pub struct Repository {
 }
 
 impl Repository {
-	
 	pub async fn wizard(&self) -> Result<(), WizError> {
-		if self.path.exists() {
-			println!("Pulling the repository...");
-			liz::tools::cmd("git", &["reset", "--hard"], &self.path, false, true)?;
-			liz::tools::cmd("git", &["checkout", "master"], &self.path, false, true)?;
-			liz::tools::cmd("git", &["reset", "--hard"], &self.path, false, true)?;
-			liz::tools::cmd("git", &["pull"], &self.path, true, true)?;
-		} else {
+		if !self.path.exists() {
 			let origin = format!("https://github.com/{}/{}", self.owner, self.name);
 			println!("Cloning the repository from {}", origin);
-			liz::tools::cmd("git", &["clone", &origin], "./code", true, true)?;
+			liz::tools::cmd("git", &["clone", "--mirror", &origin], "./code", true, true)?;
+		} else {
+			println!("Pulling the repository...");
+			liz::tools::cmd("git", &["checkout", "master"], &self.path, true, true)?;
+			liz::tools::cmd("git", &["reset", "--hard", "HEAD"], &self.path, true, true)?;
+			liz::tools::cmd("git", &["clean", "-f", "-d", "-x"], &self.path, true, true)?;
+			liz::tools::cmd("git", &["fetch", "--prune"], &self.path, true, true)?;
+			liz::tools::cmd("git", &["pull"], &self.path, true, true)?;
 		}
 		println!("Starting to check on lua wizard...");
 		let actual_tag = self.get_actual_tag()?;
@@ -99,7 +99,6 @@ impl Repository {
 		}
 		Ok(())
 	}
-	
 }
 
 pub async fn get_qinpel_repos(github: Octocrab) -> Result<Vec<Repository>, WizError> {
