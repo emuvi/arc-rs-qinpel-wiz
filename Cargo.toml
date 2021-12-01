@@ -14,4 +14,4 @@ octocrab = "0.15"
 serde = "1"
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
-liz = "0.1.1"
+liz = "0.1.2"
