@@ -1,10 +1,9 @@
 use crate::locks::Locker;
-use crate::tools;
-use crate::wizlua;
 use crate::WizError;
 use octocrab::Octocrab;
 use serde_json::Value;
 use std::path::PathBuf;
+use liz;
 
 #[derive(Debug)]
 pub struct Repository {
@@ -19,14 +18,14 @@ impl Repository {
 	pub async fn wizard(&self) -> Result<(), WizError> {
 		if self.path.exists() {
 			println!("Pulling the repository...");
-			tools::cmd("git", &["reset", "--hard"], &self.path, false, true)?;
-			tools::cmd("git", &["checkout", "master"], &self.path, false, true)?;
-			tools::cmd("git", &["reset", "--hard"], &self.path, false, true)?;
-			tools::cmd("git", &["pull"], &self.path, true, true)?;
+			liz::tools::cmd("git", &["reset", "--hard"], &self.path, false, true)?;
+			liz::tools::cmd("git", &["checkout", "master"], &self.path, false, true)?;
+			liz::tools::cmd("git", &["reset", "--hard"], &self.path, false, true)?;
+			liz::tools::cmd("git", &["pull"], &self.path, true, true)?;
 		} else {
 			let origin = format!("https://github.com/{}/{}", self.owner, self.name);
 			println!("Cloning the repository from {}", origin);
-			tools::cmd("git", &["clone", &origin], "./code", true, true)?;
+			liz::tools::cmd("git", &["clone", &origin], "./code", true, true)?;
 		}
 		println!("Starting to check on lua wizard...");
 		let actual_tag = self.get_actual_tag()?;
@@ -39,7 +38,7 @@ impl Repository {
 	}
 
 	fn get_actual_tag(&self) -> Result<String, WizError> {
-		let result = tools::cmd(
+		let result = liz::tools::cmd(
 			"git",
 			&["tag", "--sort=-version:refname"],
 			&self.path,
@@ -79,9 +78,9 @@ impl Repository {
 				actual_tag
 			);
 			let tag_param = format!("tags/{}", actual_tag);
-			tools::cmd("git", &["checkout", &tag_param], &self.path, true, true)?;
+			liz::tools::cmd("git", &["checkout", &tag_param], &self.path, true, true)?;
 			self.lua_execute()?;
-			tools::cmd("git", &["checkout", "master"], &self.path, true, true)?;
+			liz::tools::cmd("git", &["checkout", "master"], &self.path, true, true)?;
 			locker
 				.locked
 				.insert(String::from(&self.name), String::from(actual_tag));
@@ -95,7 +94,7 @@ impl Repository {
 			println!("There is no lua wizard to be executed.");
 		} else {
 			println!("Starting to execute the lua wizard...");
-			let result = wizlua::execute(&self.lua_path)?;
+			let result = liz::execute(&self.lua_path)?;
 			println!("{}", result);
 		}
 		Ok(())
