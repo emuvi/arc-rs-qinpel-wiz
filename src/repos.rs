@@ -94,7 +94,7 @@ impl Repository {
 			println!("There is no lua wizard to be executed.");
 		} else {
 			println!("Starting to execute the lua wizard...");
-			let result = liz::execute(&self.lua_path)?;
+			let result = liz::execute(&self.lua_path, None)?;
 			println!("{}", result);
 		}
 		Ok(())
