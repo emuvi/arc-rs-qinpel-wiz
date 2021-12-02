@@ -1,6 +1,3 @@
 #!/bin/bash
-su - pointel
-cd ~/Wizard
+cd /home/pointel/Wizard
 ./qinpel-wiz
-exit
-reboot
