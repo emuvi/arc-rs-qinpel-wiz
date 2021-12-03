@@ -1,13 +1,11 @@
 [package]
 name = "qinpel-wiz"
-description = "QinpelWiz - Wizard thats automagic build, install and update the Qinpel platform applications and commands."
+description = "Qinpel Wizard - Transfer, compile and installs development bundles of graphical user and command line applications for the Qinpel (Quick Interface for Pointel) Platform."
 repository = "https://github.com/emuvi/qinpel-wiz/"
 authors = ["Éverton M. Vieira"]
 license = "LGPL-3.0-only"
-version = "0.1.3"
+version = "0.1.0"
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 octocrab = "0.15"

@@ -14,6 +14,7 @@ pub struct Repository {
 }
 
 impl Repository {
+
 	pub async fn wizard(&self) -> Result<(), WizError> {
 		if !self.path.exists() {
 			let origin = format!("https://github.com/{}/{}", self.owner, self.name);
@@ -28,6 +29,9 @@ impl Repository {
 			liz::tools::cmd("git", &["pull"], &self.path, true, true)?;
 		}
 		println!("Starting to check on lua wizard...");
+
+		// TODO - If there is no lua wizard but it is a rust project then make a cargo build release and copies the target binary to /run/cmd/{name}/{name}
+
 		let actual_tag = self.get_actual_tag()?;
 		if actual_tag.is_empty() {
 			self.lua_execute_with_no_tag()?;
@@ -102,6 +106,9 @@ impl Repository {
 }
 
 pub async fn get_qinpel_repos(github: Octocrab) -> Result<Vec<Repository>, WizError> {
+
+	// TODO - Do not get all repositories, get only the repositories that are configured for this server. To use a text configuration file for this purpose.  
+
 	let mut after: String = String::new();
 	let mut result: Vec<Repository> = Vec::new();
 	loop {
