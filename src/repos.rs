@@ -1,42 +1,56 @@
+use liz;
+use std::path::PathBuf;
 use crate::locks::Locker;
 use crate::WizError;
-use liz;
-use octocrab::Octocrab;
-use serde_json::Value;
-use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct Repository {
-	pub owner: String,
+	pub address: String,
 	pub name: String,
-	pub path: PathBuf,
-	pub lua_path: PathBuf,
+	pub code_path: PathBuf,
+	pub wiz_path: PathBuf,
 }
 
 impl Repository {
-
-	pub async fn wizard(&self) -> Result<(), WizError> {
-		if !self.path.exists() {
-			let origin = format!("https://github.com/{}/{}", self.owner, self.name);
-			println!("Cloning the repository from {}", origin);
-			liz::tools::cmd("git", &["clone", &origin], "./code", true, true)?;
+	pub fn wizard(&self) -> Result<(), WizError> {
+		if !self.code_path.exists() {
+			println!("Cloning the repository from {}", self.address);
+			liz::tools::cmd("git", &["clone", &self.address], "./code", true, true)?;
 		} else {
 			println!("Pulling the repository...");
-			liz::tools::cmd("git", &["checkout", "master"], &self.path, true, true)?;
-			liz::tools::cmd("git", &["reset", "--hard", "HEAD"], &self.path, true, true)?;
-			liz::tools::cmd("git", &["clean", "-f", "-d", "-x"], &self.path, true, true)?;
-			liz::tools::cmd("git", &["fetch", "--all", "--prune"], &self.path, true, true)?;
-			liz::tools::cmd("git", &["pull"], &self.path, true, true)?;
+			liz::tools::cmd("git", &["checkout", "master"], &self.code_path, true, true)?;
+			liz::tools::cmd(
+				"git",
+				&["reset", "--hard", "HEAD"],
+				&self.code_path,
+				true,
+				true,
+			)?;
+			liz::tools::cmd(
+				"git",
+				&["clean", "-f", "-d", "-x"],
+				&self.code_path,
+				true,
+				true,
+			)?;
+			liz::tools::cmd(
+				"git",
+				&["fetch", "--all", "--prune"],
+				&self.code_path,
+				true,
+				true,
+			)?;
+			liz::tools::cmd("git", &["pull"], &self.code_path, true, true)?;
 		}
-		println!("Starting to check on lua wizard...");
+		println!("Starting to check on Qinpel wizard...");
 
-		// TODO - If there is no lua wizard but it is a rust project then make a cargo build release and copies the target binary to /run/cmd/{name}/{name}
+		// TODO - If there is no Qinpel wizard but it is a rust project then make a cargo build release and copies the target binary to /run/cmd/{name}/{name}
 
 		let actual_tag = self.get_actual_tag()?;
 		if actual_tag.is_empty() {
-			self.lua_execute_with_no_tag()?;
+			self.wiz_execute_with_no_tag()?;
 		} else {
-			self.lua_execute_with_actual_tag(actual_tag)?;
+			self.wiz_execute_with_actual_tag(actual_tag)?;
 		}
 		Ok(())
 	}
@@ -45,7 +59,7 @@ impl Repository {
 		let result = liz::tools::cmd(
 			"git",
 			&["tag", "--sort=-version:refname"],
-			&self.path,
+			&self.code_path,
 			false,
 			true,
 		)?;
@@ -58,19 +72,19 @@ impl Repository {
 		}
 	}
 
-	fn lua_execute_with_no_tag(&self) -> Result<(), WizError> {
-		println!("The lua wizard will be executed while there is no tags.");
-		self.lua_execute()?;
+	fn wiz_execute_with_no_tag(&self) -> Result<(), WizError> {
+		println!("The Qinpel wizard will be executed while there is no tags.");
+		self.wiz_execute()?;
 		Ok(())
 	}
 
-	fn lua_execute_with_actual_tag(&self, actual_tag: String) -> Result<(), WizError> {
+	fn wiz_execute_with_actual_tag(&self, actual_tag: String) -> Result<(), WizError> {
 		let mut locker = Locker::load()?;
 		let mut should_run = true;
 		if let Some(tag_done) = locker.locked.get(&self.name) {
 			if &actual_tag == tag_done {
 				println!(
-					"The lua wizard was already executed for the actual tag: {}",
+					"The Qinpel wizard was already executed for the actual tag: {}",
 					actual_tag
 				);
 				should_run = false;
@@ -78,13 +92,19 @@ impl Repository {
 		}
 		if should_run {
 			println!(
-				"The lua wizard needs to be executed for the actual tag: {}",
+				"The Qinpel wizard needs to be executed for the actual tag: {}",
 				actual_tag
 			);
 			let tag_param = format!("tags/{}", actual_tag);
-			liz::tools::cmd("git", &["checkout", &tag_param], &self.path, true, true)?;
-			self.lua_execute()?;
-			liz::tools::cmd("git", &["checkout", "master"], &self.path, true, true)?;
+			liz::tools::cmd(
+				"git",
+				&["checkout", &tag_param],
+				&self.code_path,
+				true,
+				true,
+			)?;
+			self.wiz_execute()?;
+			liz::tools::cmd("git", &["checkout", "master"], &self.code_path, true, true)?;
 			locker
 				.locked
 				.insert(String::from(&self.name), String::from(actual_tag));
@@ -93,78 +113,36 @@ impl Repository {
 		Ok(())
 	}
 
-	fn lua_execute(&self) -> Result<(), WizError> {
-		if !self.lua_path.exists() {
-			println!("There is no lua wizard to be executed.");
+	fn wiz_execute(&self) -> Result<(), WizError> {
+		if !self.wiz_path.exists() {
+			println!("There is no Qinpel wizard to be executed.");
 		} else {
-			println!("Starting to execute the lua wizard...");
-			let result = liz::execute(&self.lua_path, None)?;
+			println!("Starting to execute the Qinpel wizard...");
+			let result = liz::execute(&self.wiz_path, None)?;
 			println!("{}", result);
 		}
 		Ok(())
 	}
 }
 
-pub async fn get_qinpel_repos(github: Octocrab) -> Result<Vec<Repository>, WizError> {
-
-	// TODO - Do not get all repositories, get only the repositories that are configured for this server. To use a text configuration file for this purpose.  
-
-	let mut after: String = String::new();
+pub fn get_qinpel_repos() -> Result<Vec<Repository>, WizError> {
 	let mut result: Vec<Repository> = Vec::new();
-	loop {
-		let query = format!(
-			"query {{
-                viewer {{
-                    repositories(first: 30 {}) {{
-                        nodes {{
-                            nameWithOwner
-                        }}
-                        pageInfo {{
-                            hasNextPage
-                            endCursor
-                        }}
-                    }}
-                }}
-            }}",
-			after
-		);
-		let response: Value = github.graphql(&query).await?;
-		let response = response.as_object().unwrap();
-		let data = response.get("data").unwrap().as_object().unwrap();
-		let viewer = data.get("viewer").unwrap().as_object().unwrap();
-		let repositories = viewer.get("repositories").unwrap().as_object().unwrap();
-		let nodes = repositories.get("nodes").unwrap().as_array().unwrap();
-		for node in nodes {
-			let node = node.as_object().unwrap();
-			let name_with_owner = node.get("nameWithOwner").unwrap().as_str().unwrap();
-			let mut name_parts = name_with_owner.split("/");
-			let owner = String::from(name_parts.next().unwrap());
-			let name = String::from(name_parts.next().unwrap());
-			if is_qinpel_repo(&name) {
-				let path = format!("./code/{}", name);
-				let path = PathBuf::from(path);
-				let lua_path = format!("./code/{}/{}", name, "qinpel-wiz.lua");
-				let lua_path = PathBuf::from(lua_path);
-				result.push(Repository {
-					owner,
-					name,
-					path,
-					lua_path,
-				});
-			}
-		}
-		let page_info = repositories.get("pageInfo").unwrap().as_object().unwrap();
-		let has_next_page = page_info.get("hasNextPage").unwrap().as_bool().unwrap();
-		if has_next_page {
-			let end_cursor = page_info.get("endCursor").unwrap().as_str().unwrap();
-			after = format!(", after: \"{}\"", end_cursor);
-		} else {
-			break;
+	let data = std::fs::read_to_string("./qinpel-wiz.txt")?;
+	for line in data.lines() {
+		if let Some(separator) = line.rfind('/') {
+			let address = String::from(line);
+			let name = String::from(&line[separator..]);
+			let code_path = format!("./code/{}", name);
+			let code_path = PathBuf::from(code_path);
+			let wiz_path = format!("./code/{}/{}", name, "qinpel-wiz.liz");
+			let wiz_path = PathBuf::from(wiz_path);
+			result.push(Repository {
+				address,
+				name,
+				code_path,
+				wiz_path,
+			});
 		}
 	}
 	Ok(result)
-}
-
-fn is_qinpel_repo(name: &str) -> bool {
-	return name.starts_with("qinpel-") || name.ends_with("-qap") || name.ends_with("-qic");
 }
