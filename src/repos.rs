@@ -14,6 +14,29 @@ pub struct Repository {
 }
 
 impl Repository {
+
+	pub fn new(url: &str) -> Repository {
+		let separator = url.rfind('/').unwrap();
+		let address = String::from(url);
+		let name = String::from(&url[separator + 1..]);
+		let code_path = format!("./code/{}", name);
+		let code_path = PathBuf::from(code_path);
+		let wiz_path = format!("./code/{}/{}", name, "qinpel-wiz.liz");
+		let wiz_path = PathBuf::from(wiz_path);
+		let cmd_path = format!("./code/{}/{}", name, "Cargo.toml");
+		let cmd_path = PathBuf::from(cmd_path);
+		let app_path = format!("./code/{}/{}", name, "tsconfig.json");
+		let app_path = PathBuf::from(app_path);
+		Repository {
+			address,
+			name,
+			code_path,
+			wiz_path,
+			cmd_path,
+			app_path,
+		}
+	}
+
 	pub fn wizard(&self, clean: bool) -> Result<(), WizError> {
 		if clean {
 			liz::files::rm(&self.code_path)?;
@@ -175,25 +198,8 @@ pub fn get_qinpel_repos() -> Result<Vec<Repository>, WizError> {
 	let mut result: Vec<Repository> = Vec::new();
 	let data = std::fs::read_to_string("./qinpel-wiz.ini")?;
 	for line in data.lines() {
-		if let Some(separator) = line.rfind('/') {
-			let address = String::from(line);
-			let name = String::from(&line[separator + 1..]);
-			let code_path = format!("./code/{}", name);
-			let code_path = PathBuf::from(code_path);
-			let wiz_path = format!("./code/{}/{}", name, "qinpel-wiz.liz");
-			let wiz_path = PathBuf::from(wiz_path);
-			let cmd_path = format!("./code/{}/{}", name, "Cargo.toml");
-			let cmd_path = PathBuf::from(cmd_path);
-			let app_path = format!("./code/{}/{}", name, "tsconfig.json");
-			let app_path = PathBuf::from(app_path);
-			result.push(Repository {
-				address,
-				name,
-				code_path,
-				wiz_path,
-				cmd_path,
-				app_path,
-			});
+		if !line.is_empty() {
+			result.push(Repository::new(line));
 		}
 	}
 	Ok(result)
