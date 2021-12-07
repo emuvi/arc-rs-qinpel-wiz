@@ -9,7 +9,8 @@ pub struct Repository {
 	pub name: String,
 	pub code_path: PathBuf,
 	pub wiz_path: PathBuf,
-	pub cargo_path: PathBuf,
+	pub rust_path: PathBuf,
+	pub tsc_path: PathBuf,
 }
 
 impl Repository {
@@ -96,9 +97,12 @@ impl Repository {
 	fn wiz_execute(&self) -> Result<(), WizError> {
 		if !self.wiz_path.exists() {
 			println!("There is no Qinpel wizard to be executed.");
-			if self.cargo_path.exists() {
-				println!("But it's a Cargo project so it will be deployed as such.");
-				self.deploy_cargo()?;
+			if self.rust_path.exists() {
+				println!("But it's a Rust project so it will be deployed as a command.");
+				self.deploy_rust()?;
+			} else if self.tsc_path.exists() {
+				println!("But it's a TypeScript project so it will be deployed as an application.");
+				self.deploy_tsc()?;
 			}
 		} else {
 			println!("Starting to execute the Qinpel wizard...");
@@ -115,7 +119,7 @@ impl Repository {
 		Ok(())
 	}
 
-	fn deploy_cargo(&self) -> Result<(), WizError> {
+	fn deploy_rust(&self) -> Result<(), WizError> {
 		liz::execs::cmd(
 			"cargo",
 			&["build", "--release"],
@@ -138,6 +142,13 @@ impl Repository {
 		liz::files::cp_tmp(origin, destiny)?;
 		Ok(())
 	}
+
+	fn deploy_tsc(&self) -> Result<(), WizError> {
+		liz::execs::cmd("npm", &["install"], &self.code_path, true, true)?;
+		liz::execs::cmd("tsc", &["-p", "."], &self.code_path, true, true)?;
+
+		Ok(())
+	}
 }
 
 pub fn get_qinpel_repos() -> Result<Vec<Repository>, WizError> {
@@ -151,14 +162,17 @@ pub fn get_qinpel_repos() -> Result<Vec<Repository>, WizError> {
 			let code_path = PathBuf::from(code_path);
 			let wiz_path = format!("./code/{}/{}", name, "qinpel-wiz.liz");
 			let wiz_path = PathBuf::from(wiz_path);
-			let cargo_path = format!("./code/{}/{}", name, "Cargo.toml");
-			let cargo_path = PathBuf::from(cargo_path);
+			let rust_path = format!("./code/{}/{}", name, "Cargo.toml");
+			let rust_path = PathBuf::from(rust_path);
+			let tsc_path = format!("./code/{}/{}", name, "tsconfig.json");
+			let tsc_path = PathBuf::from(rust_path);
 			result.push(Repository {
 				address,
 				name,
 				code_path,
 				wiz_path,
-				cargo_path,
+				rust_path,
+				tsc_path,
 			});
 		}
 	}
