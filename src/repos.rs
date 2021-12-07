@@ -1,7 +1,7 @@
-use liz;
-use std::path::PathBuf;
 use crate::locks::Locker;
 use crate::WizError;
+use liz;
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct Repository {
@@ -9,6 +9,7 @@ pub struct Repository {
 	pub name: String,
 	pub code_path: PathBuf,
 	pub wiz_path: PathBuf,
+	pub cargo_path: PathBuf,
 }
 
 impl Repository {
@@ -43,9 +44,6 @@ impl Repository {
 			liz::execs::cmd("git", &["pull"], &self.code_path, true, true)?;
 		}
 		println!("Starting to check on Qinpel wizard...");
-
-		// TODO - If there is no Qinpel wizard but it is a rust project then make a cargo build release and copies the target binary to /run/cmd/{name}/{name}
-
 		let actual_tag = self.get_actual_tag()?;
 		if actual_tag.is_empty() {
 			self.wiz_execute_with_no_tag()?;
@@ -116,6 +114,10 @@ impl Repository {
 	fn wiz_execute(&self) -> Result<(), WizError> {
 		if !self.wiz_path.exists() {
 			println!("There is no Qinpel wizard to be executed.");
+			if self.cargo_path.exists() {
+				println!("But it's a Cargo project so it will be deployed as such.");
+				self.deploy_cargo()?;
+			}
 		} else {
 			println!("Starting to execute the Qinpel wizard...");
 			let results = liz::exec(&self.wiz_path, None)?;
@@ -130,24 +132,51 @@ impl Repository {
 		}
 		Ok(())
 	}
+
+	fn deploy_cargo(&self) -> Result<(), WizError> {
+		liz::execs::cmd(
+			"cargo",
+			&["build", "--release"],
+			&self.code_path,
+			true,
+			true,
+		)?;
+		let origin = format!(
+			"./code/{}/target/release/{}{}",
+			self.name,
+			self.name,
+			liz::files::exe_ext()
+		);
+		let destiny = format!(
+			"./run/cmds/{}/{}{}",
+			self.name,
+			self.name,
+			liz::files::exe_ext()
+		);
+		liz::files::cp_tmp(origin, destiny)?;
+		Ok(())
+	}
 }
 
 pub fn get_qinpel_repos() -> Result<Vec<Repository>, WizError> {
 	let mut result: Vec<Repository> = Vec::new();
-	let data = std::fs::read_to_string("./qinpel-wiz.txt")?;
+	let data = std::fs::read_to_string("./qinpel-wiz.ini")?;
 	for line in data.lines() {
 		if let Some(separator) = line.rfind('/') {
 			let address = String::from(line);
-			let name = String::from(&line[separator+1..]);
+			let name = String::from(&line[separator + 1..]);
 			let code_path = format!("./code/{}", name);
 			let code_path = PathBuf::from(code_path);
 			let wiz_path = format!("./code/{}/{}", name, "qinpel-wiz.liz");
 			let wiz_path = PathBuf::from(wiz_path);
+			let cargo_path = format!("./code/{}/{}", name, "Cargo.toml");
+			let cargo_path = PathBuf::from(cargo_path);
 			result.push(Repository {
 				address,
 				name,
 				code_path,
 				wiz_path,
+				cargo_path,
 			});
 		}
 	}
