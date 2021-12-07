@@ -100,9 +100,11 @@ impl Repository {
 			if self.cmd_path.exists() {
 				println!("But it's a Rust project so it will be deployed as a command.");
 				self.deploy_cmd()?;
+				println!("Qinpel Rust command deployed with success.");
 			} else if self.app_path.exists() {
 				println!("But it's a TypeScript project so it will be deployed as an application.");
 				self.deploy_app()?;
+				println!("Qinpel TypeScript application deployed with success.");
 			}
 		} else {
 			println!("Starting to execute the Qinpel wizard...");
