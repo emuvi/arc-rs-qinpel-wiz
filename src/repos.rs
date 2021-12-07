@@ -13,34 +13,16 @@ pub struct Repository {
 }
 
 impl Repository {
-	pub fn wizard(&self) -> Result<(), WizError> {
+	pub fn wizard(&self, clean: bool) -> Result<(), WizError> {
+		if clean {
+			liz::files::rm(&self.code_path)?;
+		}
 		if !self.code_path.exists() {
 			println!("Cloning the repository from {}", self.address);
 			liz::execs::cmd("git", &["clone", &self.address], "./code", true, true)?;
 		} else {
 			println!("Pulling the repository...");
 			liz::execs::cmd("git", &["checkout", "master"], &self.code_path, true, true)?;
-			liz::execs::cmd(
-				"git",
-				&["reset", "--hard", "HEAD"],
-				&self.code_path,
-				true,
-				true,
-			)?;
-			liz::execs::cmd(
-				"git",
-				&["clean", "-f", "-d", "-x"],
-				&self.code_path,
-				true,
-				true,
-			)?;
-			liz::execs::cmd(
-				"git",
-				&["fetch", "--all", "--prune"],
-				&self.code_path,
-				true,
-				true,
-			)?;
 			liz::execs::cmd("git", &["pull"], &self.code_path, true, true)?;
 		}
 		println!("Starting to check on Qinpel wizard...");
