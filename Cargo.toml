@@ -4,10 +4,10 @@ description = "Qinpel Wizard - Transfer, compile and installs development bundle
 repository = "https://github.com/emuvi/qinpel-wiz/"
 authors = ["Éverton M. Vieira"]
 license = "LGPL-3.0-only"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2018"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-liz = "0.1.11"
+liz = "0.1.12"

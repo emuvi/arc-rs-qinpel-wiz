@@ -9,8 +9,8 @@ pub struct Repository {
 	pub name: String,
 	pub code_path: PathBuf,
 	pub wiz_path: PathBuf,
-	pub rust_path: PathBuf,
-	pub tsc_path: PathBuf,
+	pub cmd_path: PathBuf,
+	pub app_path: PathBuf,
 }
 
 impl Repository {
@@ -97,12 +97,12 @@ impl Repository {
 	fn wiz_execute(&self) -> Result<(), WizError> {
 		if !self.wiz_path.exists() {
 			println!("There is no Qinpel wizard to be executed.");
-			if self.rust_path.exists() {
+			if self.cmd_path.exists() {
 				println!("But it's a Rust project so it will be deployed as a command.");
-				self.deploy_rust()?;
-			} else if self.tsc_path.exists() {
+				self.deploy_cmd()?;
+			} else if self.app_path.exists() {
 				println!("But it's a TypeScript project so it will be deployed as an application.");
-				self.deploy_tsc()?;
+				self.deploy_app()?;
 			}
 		} else {
 			println!("Starting to execute the Qinpel wizard...");
@@ -119,7 +119,7 @@ impl Repository {
 		Ok(())
 	}
 
-	fn deploy_rust(&self) -> Result<(), WizError> {
+	fn deploy_cmd(&self) -> Result<(), WizError> {
 		liz::execs::cmd(
 			"cargo",
 			&["build", "--release"],
@@ -134,7 +134,7 @@ impl Repository {
 			liz::files::exe_ext()
 		);
 		let destiny = format!(
-			"./run/cmds/{}/{}{}",
+			"./run/cmd/{}/{}{}",
 			self.name,
 			self.name,
 			liz::files::exe_ext()
@@ -143,10 +143,28 @@ impl Repository {
 		Ok(())
 	}
 
-	fn deploy_tsc(&self) -> Result<(), WizError> {
+	fn deploy_app(&self) -> Result<(), WizError> {
 		liz::execs::cmd("npm", &["install"], &self.code_path, true, true)?;
 		liz::execs::cmd("tsc", &["-p", "."], &self.code_path, true, true)?;
-
+		let public_path = format!("./code/{}/public", self.name);
+		if liz::files::is_dir(&public_path) {
+			let list_public_js = liz::files::path_list_files_ext(&public_path, ".js")?;
+			for public_js in list_public_js {
+				let name_js = liz::files::path_name(&public_js)?;
+				let build_js = format!("./code/{}/build/{}", self.name, &name_js);
+				if liz::files::is_file(&build_js) {
+					liz::execs::cmd(
+						"browserify",
+						&[&build_js[..], "--debug", "-o", &public_js[..]],
+						".",
+						true,
+						true,
+					)?;
+				}
+			}
+			let deployed_path = format!("./run/app/{}", self.name);
+			liz::files::cp_tmp(public_path, deployed_path)?;
+		}
 		Ok(())
 	}
 }
@@ -162,17 +180,17 @@ pub fn get_qinpel_repos() -> Result<Vec<Repository>, WizError> {
 			let code_path = PathBuf::from(code_path);
 			let wiz_path = format!("./code/{}/{}", name, "qinpel-wiz.liz");
 			let wiz_path = PathBuf::from(wiz_path);
-			let rust_path = format!("./code/{}/{}", name, "Cargo.toml");
-			let rust_path = PathBuf::from(rust_path);
-			let tsc_path = format!("./code/{}/{}", name, "tsconfig.json");
-			let tsc_path = PathBuf::from(rust_path);
+			let cmd_path = format!("./code/{}/{}", name, "Cargo.toml");
+			let cmd_path = PathBuf::from(cmd_path);
+			let app_path = format!("./code/{}/{}", name, "tsconfig.json");
+			let app_path = PathBuf::from(app_path);
 			result.push(Repository {
 				address,
 				name,
 				code_path,
 				wiz_path,
-				rust_path,
-				tsc_path,
+				cmd_path,
+				app_path,
 			});
 		}
 	}
