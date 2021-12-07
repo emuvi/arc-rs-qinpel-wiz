@@ -138,7 +138,7 @@ pub fn get_qinpel_repos() -> Result<Vec<Repository>, WizError> {
 	for line in data.lines() {
 		if let Some(separator) = line.rfind('/') {
 			let address = String::from(line);
-			let name = String::from(&line[separator..]);
+			let name = String::from(&line[separator+1..]);
 			let code_path = format!("./code/{}", name);
 			let code_path = PathBuf::from(code_path);
 			let wiz_path = format!("./code/{}/{}", name, "qinpel-wiz.liz");
