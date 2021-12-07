@@ -1,4 +1,5 @@
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
+use serde_json;
 use std::collections::HashMap;
 use crate::WizError;
 
@@ -8,7 +9,6 @@ pub struct Locker {
 }
 
 impl Locker {
-
     pub fn load() -> Result<Locker, WizError> {
         let path = std::path::Path::new("./locker.json");
         if path.exists() {
@@ -27,5 +27,4 @@ impl Locker {
         std::fs::write("./locker.json", source)?;
         Ok(())
     }
-
 }

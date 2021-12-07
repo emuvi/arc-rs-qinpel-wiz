@@ -15,32 +15,32 @@ impl Repository {
 	pub fn wizard(&self) -> Result<(), WizError> {
 		if !self.code_path.exists() {
 			println!("Cloning the repository from {}", self.address);
-			liz::tools::cmd("git", &["clone", &self.address], "./code", true, true)?;
+			liz::execs::cmd("git", &["clone", &self.address], "./code", true, true)?;
 		} else {
 			println!("Pulling the repository...");
-			liz::tools::cmd("git", &["checkout", "master"], &self.code_path, true, true)?;
-			liz::tools::cmd(
+			liz::execs::cmd("git", &["checkout", "master"], &self.code_path, true, true)?;
+			liz::execs::cmd(
 				"git",
 				&["reset", "--hard", "HEAD"],
 				&self.code_path,
 				true,
 				true,
 			)?;
-			liz::tools::cmd(
+			liz::execs::cmd(
 				"git",
 				&["clean", "-f", "-d", "-x"],
 				&self.code_path,
 				true,
 				true,
 			)?;
-			liz::tools::cmd(
+			liz::execs::cmd(
 				"git",
 				&["fetch", "--all", "--prune"],
 				&self.code_path,
 				true,
 				true,
 			)?;
-			liz::tools::cmd("git", &["pull"], &self.code_path, true, true)?;
+			liz::execs::cmd("git", &["pull"], &self.code_path, true, true)?;
 		}
 		println!("Starting to check on Qinpel wizard...");
 
@@ -56,7 +56,7 @@ impl Repository {
 	}
 
 	fn get_actual_tag(&self) -> Result<String, WizError> {
-		let result = liz::tools::cmd(
+		let result = liz::execs::cmd(
 			"git",
 			&["tag", "--sort=-version:refname"],
 			&self.code_path,
@@ -96,7 +96,7 @@ impl Repository {
 				actual_tag
 			);
 			let tag_param = format!("tags/{}", actual_tag);
-			liz::tools::cmd(
+			liz::execs::cmd(
 				"git",
 				&["checkout", &tag_param],
 				&self.code_path,
@@ -104,7 +104,7 @@ impl Repository {
 				true,
 			)?;
 			self.wiz_execute()?;
-			liz::tools::cmd("git", &["checkout", "master"], &self.code_path, true, true)?;
+			liz::execs::cmd("git", &["checkout", "master"], &self.code_path, true, true)?;
 			locker
 				.locked
 				.insert(String::from(&self.name), String::from(actual_tag));
@@ -118,8 +118,15 @@ impl Repository {
 			println!("There is no Qinpel wizard to be executed.");
 		} else {
 			println!("Starting to execute the Qinpel wizard...");
-			let result = liz::execute(&self.wiz_path, None)?;
-			println!("{}", result);
+			let results = liz::exec(&self.wiz_path, None)?;
+			if results.is_empty() {
+				println!("Qinpel wizard executed with no results.");
+			} else {
+				println!("Qinpel wizard executed with the results:");
+				for result in results {
+					println!("{}", result);
+				}
+			}
 		}
 		Ok(())
 	}
