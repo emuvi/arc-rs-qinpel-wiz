@@ -49,13 +49,14 @@ impl Repository {
 			liz::execs::cmd("git", &["checkout", "master"], &self.code_path, true, true)?;
 			liz::execs::cmd("git", &["pull"], &self.code_path, true, true)?;
 		}
-		println!("Starting to check on Qinpel wizard...");
+		println!("Starting to check the Qinpel wizard steps...");
 		let actual_tag = self.get_actual_tag()?;
 		if actual_tag.is_empty() {
 			self.wiz_execute_with_no_tag()?;
 		} else {
 			self.wiz_execute_with_actual_tag(actual_tag)?;
 		}
+		println!("Finished to make the Qinpel wizard steps.");
 		Ok(())
 	}
 
