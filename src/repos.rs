@@ -47,6 +47,8 @@ impl Repository {
 		} else {
 			println!("Pulling the repository...");
 			liz::execs::cmd("git", &["checkout", "master"], &self.code_path, true, true)?;
+			liz::execs::cmd("git", &["reset", "--hard"], &self.code_path, true, true)?;
+			liz::execs::cmd("git", &["fetch", "--prune"], &self.code_path, true, true)?;
 			liz::execs::cmd("git", &["pull"], &self.code_path, true, true)?;
 		}
 		println!("Starting to check the Qinpel wizard steps...");
@@ -100,14 +102,9 @@ impl Repository {
 				"The Qinpel wizard needs to be executed for the actual tag: {}",
 				actual_tag
 			);
-			let tag_param = format!("tags/{}", actual_tag);
-			liz::execs::cmd(
-				"git",
-				&["checkout", &tag_param],
-				&self.code_path,
-				true,
-				true,
-			)?;
+			let tagged = format!("tags/{}", actual_tag);
+			liz::execs::cmd("git", &["checkout", &tagged], &self.code_path, true, true)?;
+			liz::execs::cmd("git", &["reset", "--hard"], &self.code_path, true, true)?;
 			self.wiz_execute()?;
 			liz::execs::cmd("git", &["checkout", "master"], &self.code_path, true, true)?;
 			locker
