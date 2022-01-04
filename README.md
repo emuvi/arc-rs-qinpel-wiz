@@ -1,4 +1,3 @@
-QinpelWiz
-=========
+# QinpelWiz
 
-Qinpel Wizard - Transfer, compile and installs development bundles of graphical user and command line applications for the Qinpel (Quick Interface for Pointel) Platform.
+QinpelWiz ( Qinpel Wizard ) is a command that transfers, compiles and installs selected bundles of graphical user applications and command interfaces for the Qinpel, the Quick Interface for Pointel platform.
