@@ -61,7 +61,7 @@ fn wizard_all(clean: bool) -> Result<(), WizError> {
 fn print_help() {
 	println!("QinpelWiz {}
 Éverton M. Vieira <everton.muvi@gmail.com>
-Qinpel Wizard - Transfer, compile and installs development bundles of graphical user and command line applications for the Qinpel (Quick Interface for Pointel) Platform.
+QinpelWiz ( Qinpel Wizard ) is a command program that transfers, compiles and installs configured bundles of user interfaces and command programs for the Qinpel, the Quick Interface for Pointel platform.
 
 USAGE:
     qinpel-wiz [FLAGS] [URL]...
