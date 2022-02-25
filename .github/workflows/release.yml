@@ -1,9 +1,9 @@
-name: Rust Release CI
+name: Pointel Rust Release CI
 on: [push]
 jobs:
   mac-64:
     runs-on: macos-latest
-    if: "startsWith(github.event.head_commit.message, 'release-version')"
+    if: "startsWith(github.event.head_commit.message, '[Release]')"
     steps:
       - uses: rishabhgupta/split-by@v1
         id: split
@@ -30,8 +30,9 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.split.outputs._2 }}
-          name: Release version ${{ steps.split.outputs._2 }}
+          tag_name: v${{ steps.split.outputs._1 }}
+          name: Release version ${{ steps.split.outputs._1 }}
+          body_path: CHANGELOG.md
           draft: true
           files: ./release/*.tar.gz
         env:
@@ -39,7 +40,7 @@ jobs:
   
   lin-64:
     runs-on: ubuntu-latest
-    if: "startsWith(github.event.head_commit.message, 'release-version')"
+    if: "startsWith(github.event.head_commit.message, '[Release]')"
     steps:
       - uses: rishabhgupta/split-by@v1
         id: split
@@ -66,8 +67,9 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.split.outputs._2 }}
-          name: Release version ${{ steps.split.outputs._2 }}
+          tag_name: v${{ steps.split.outputs._1 }}
+          name: Release version ${{ steps.split.outputs._1 }}
+          body_path: CHANGELOG.md
           draft: true
           files: ./release/*.tar.gz
         env:
@@ -75,7 +77,7 @@ jobs:
 
   win-64:
     runs-on: windows-latest
-    if: "startsWith(github.event.head_commit.message, 'release-version')"
+    if: "startsWith(github.event.head_commit.message, '[Release]')"
     steps:
       - uses: rishabhgupta/split-by@v1
         id: split
@@ -101,8 +103,9 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.split.outputs._2 }}
-          name: Release version ${{ steps.split.outputs._2 }}
+          tag_name: v${{ steps.split.outputs._1 }}
+          name: Release version ${{ steps.split.outputs._1 }}
+          body_path: CHANGELOG.md
           draft: true
           files: ./release/*.tar.gz
         env:
